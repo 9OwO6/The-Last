@@ -18,8 +18,8 @@ import org.robolectric.shadows.ShadowLooper
 @Config(sdk = [28], application = Application::class)
 class AppUpdateManagerTest {
     private val context get() = RuntimeEnvironment.getApplication()
-    private val json = """{"tag_name":"v0.12.0","assets":[{"name":"app.apk","size":3,
-        "browser_download_url":"https://github.com/owner/repo/releases/download/v0.12.0/app.apk",
+    private val json = """{"tag_name":"v0.13.0","assets":[{"name":"app.apk","size":3,
+        "browser_download_url":"https://github.com/owner/repo/releases/download/v0.13.0/app.apk",
         "digest":"sha256:${"ab".repeat(32)}"}]}"""
     private fun prepare() {
         context.getSharedPreferences("app_updates", Context.MODE_PRIVATE).edit().clear().commit()
@@ -46,7 +46,7 @@ class AppUpdateManagerTest {
         val manager = AppUpdateManager(context) { calls.incrementAndGet(); response(it, 200, json) }
         assertNull(manager.configure("owner/repo"))
         await(manager)
-        assertEquals("0.12.0", manager.state.value.release?.version)
+        assertEquals("0.13.0", manager.state.value.release?.version)
         manager.check()
         assertEquals(1, calls.get())
         manager.check(true)

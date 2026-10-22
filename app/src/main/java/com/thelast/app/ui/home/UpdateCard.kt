@@ -29,7 +29,7 @@ fun UpdateCard() {
         colors = CardDefaults.cardColors(containerColor = com.thelast.app.ui.theme.theLastColors().panel)) {
         Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                Image(painterResource(R.drawable.illus_update), null, Modifier.size(64.dp))
+                Image(painterResource(R.drawable.story_delivery), null, Modifier.size(92.dp))
                 Column(Modifier.weight(1f)) {
                     Text("让小日常，常用常新", style = MaterialTheme.typography.titleMedium)
                     Text("当前版本 ${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.bodySmall)

@@ -51,6 +51,26 @@ class UiSmokeTest {
         capture("home-night-recorded")
     }
 
+    @Test(timeout = 60000)
+    @Config(qualifiers = "w360dp-h780dp-mdpi")
+    fun smallScreenKeepsRecordingAndNavigationUsable() {
+        val app = org.robolectric.RuntimeEnvironment.getApplication() as TheLastApplication
+        val before = kotlinx.coroutines.runBlocking {
+            app.eventRepository.createEventType("喝水", "food", 0xFF56745E, "生活", 0)
+            app.eventRepository.getBackupSnapshot().eventRecords.size
+        }
+        compose.setContent { TheLastTheme { TheLastNavHost() } }
+        compose.waitUntil(5000) { compose.onAllNodesWithText("记一下").fetchSemanticsNodes().isNotEmpty() }
+        compose.onAllNodesWithText("记一下").onFirst().performScrollTo().performClick()
+        compose.waitUntil(5000) {
+            kotlinx.coroutines.runBlocking { app.eventRepository.getBackupSnapshot().eventRecords.size > before }
+        }
+        capture("home-small-recorded")
+        compose.onNodeWithText("我的", useUnmergedTree = true).performClick()
+        compose.onNodeWithText("让小日常，常用常新").assertIsDisplayed()
+        capture("profile-small")
+    }
+
     private fun capture(name: String) {
         val output = File("build/reports/ui/$name.png").also { it.parentFile!!.mkdirs() }
         compose.runOnIdle {
@@ -59,5 +79,14 @@ class UiSmokeTest {
             view.draw(android.graphics.Canvas(bitmap))
             output.outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
         }
+    }
+
+    @Test(timeout = 60000)
+    fun firstUseShowsJournalInvitation() {
+        val app = org.robolectric.RuntimeEnvironment.getApplication() as TheLastApplication
+        kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) { app.database.clearAllTables() }
+        compose.setContent { TheLastTheme { TheLastNavHost() } }
+        compose.onNodeWithText("第一件小事，从这里开始").assertIsDisplayed()
+        capture("home-empty")
     }
 }

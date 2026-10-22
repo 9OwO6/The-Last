@@ -18,7 +18,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -47,6 +46,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.Info
@@ -88,10 +91,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -109,8 +110,8 @@ import com.thelast.app.domain.model.BackupExportFormat
 import com.thelast.app.domain.model.BackupImportPreview
 import com.thelast.app.domain.model.EventSummary
 import com.thelast.app.domain.model.HomeCalendarRecord
+import com.thelast.app.ui.illustration.StoryBanner
 import com.thelast.app.ui.illustration.eventIllustrationForKey
-import com.thelast.app.ui.illustration.navIllustrationForIndex
 import com.thelast.app.ui.illustration.statIllustrationForLabel
 import com.thelast.app.ui.theme.TheLastColors as WarmColors
 import com.thelast.app.ui.theme.TheLastMotion
@@ -268,28 +269,22 @@ private fun HomeScreen(
 
     Scaffold(
         containerColor = colors.background,
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                androidx.compose.material3.Snackbar(
+                    snackbarData = data, containerColor = colors.ink, contentColor = colors.surface,
+                    actionColor = colors.yellow, shape = RoundedCornerShape(16.dp),
+                )
+            }
+        },
         floatingActionButton = {
-            if (selectedTab == HomeTab.Home) {
-                Box {
-                    FloatingActionButton(
-                        onClick = onAddEvent,
-                        containerColor = colors.peach,
-                        contentColor = Color.White,
-                        elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp),
-                        shape = RoundedCornerShape(22.dp),
-                    ) {
-                        Icon(Icons.Rounded.Add, contentDescription = "添加事件")
-                    }
-                    Image(
-                        painter = painterResource(R.drawable.decor_bear),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .size(34.dp),
-                        contentScale = ContentScale.Fit,
-                    )
-                }
+            if (selectedTab == HomeTab.Home && uiState.events.isNotEmpty()) {
+                androidx.compose.material3.ExtendedFloatingActionButton(
+                    onClick = onAddEvent, containerColor = colors.green, contentColor = colors.surface,
+                    shape = RoundedCornerShape(20.dp),
+                    icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
+                    text = { Text("新建小事") },
+                )
             }
         },
         bottomBar = {
@@ -356,11 +351,13 @@ private fun WarmBottomBar(
                 selected = selectedTab == tab,
                 onClick = { onTabSelected(tab) },
                 icon = {
-                    Image(
-                        painter = painterResource(navIllustrationForIndex(index)),
-                        contentDescription = tab.label,
-                        modifier = Modifier.size(28.dp),
-                        contentScale = ContentScale.Fit,
+                    Icon(
+                        imageVector = when (tab) {
+                            HomeTab.Home -> Icons.Rounded.Home
+                            HomeTab.Calendar -> Icons.Rounded.CalendarMonth
+                            HomeTab.Stats -> Icons.Rounded.BarChart
+                            HomeTab.Profile -> Icons.Rounded.Person
+                        }, contentDescription = null, modifier = Modifier.size(24.dp),
                     )
                 },
                 label = { Text(tab.label) },
@@ -403,16 +400,7 @@ private fun QuickHomePage(
         contentPadding = PaddingValues(start = 20.dp, top = 22.dp, end = 20.dp, bottom = 104.dp),
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Image(painterResource(R.drawable.illus_daily), null,
-                Modifier.fillMaxWidth().height(142.dp), contentScale = ContentScale.Fit)
-            LifeDrawerHeader(
-                colors = colors,
-                todayCount = todayCount,
-                summary = uiState.rhythmSummary,
-                onVoiceInput = onVoiceInput,
-            )
-            }
+            LifeDrawerHeader(colors, todayCount, uiState.rhythmSummary, onVoiceInput)
         }
         item(span = { GridItemSpan(maxLineSpan) }) {
             UpdateReminder(onOpen = onUpdates)
@@ -470,102 +458,26 @@ private fun LifeDrawerHeader(
     summary: String,
     onVoiceInput: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top,
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(5.dp),
-            ) {
-                Text(
-                    text = "THELAST · ${DateTimeFormatter.ofPattern("M月d日").format(LocalDate.now())}",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = colors.peach,
-                )
-                Text(
-                    text = "我的生活抽屉",
-                    style = MaterialTheme.typography.displaySmall,
-                    color = colors.ink,
-                )
-                Text(
-                    text = "有些名字只需要自己明白。",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.muted,
-                )
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically) {
+            Column {
+                Text("THE LAST", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = colors.green)
+                Text(DateTimeFormatter.ofPattern("M月d日 · EEEE", Locale.CHINA).format(LocalDate.now()),
+                    style = MaterialTheme.typography.bodySmall, color = colors.muted)
             }
-            IconButton(
-                onClick = onVoiceInput,
-                modifier = Modifier
-                    .size(46.dp)
-                    .background(colors.green, RoundedCornerShape(16.dp))
-                    .border(1.dp, colors.line, RoundedCornerShape(16.dp)),
-            ) {
-                Icon(Icons.Rounded.Mic, contentDescription = "语音记录", tint = Color.White)
+            IconButton(onClick = onVoiceInput, modifier = Modifier.background(colors.surface, CircleShape)) {
+                Icon(Icons.Rounded.Mic, contentDescription = "语音记录", tint = colors.green)
             }
         }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(colors.panel, RoundedCornerShape(TheLastShape.SmallCard))
-                .border(1.dp, colors.line, RoundedCornerShape(TheLastShape.SmallCard))
-                .padding(horizontal = 14.dp, vertical = 11.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier
-                    .background(colors.peach, RoundedCornerShape(TheLastShape.Pill))
-                    .padding(horizontal = 10.dp, vertical = 5.dp),
-            ) {
-                Text("今天 $todayCount 次", style = MaterialTheme.typography.labelLarge, color = Color.White)
-            }
-            Text(
-                text = summary,
-                style = MaterialTheme.typography.bodySmall,
-                color = colors.ink,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+        StoryBanner("生活里的小小收藏", "我的生活抽屉", "让每件小事，\n都有被记住的位置。",
+            R.drawable.story_drawer)
+        Row(Modifier.fillMaxWidth().background(colors.surface, RoundedCornerShape(18.dp)).padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("今天 $todayCount 次", style = MaterialTheme.typography.labelLarge, color = colors.green,
+                modifier = Modifier.background(colors.green.copy(alpha = 0.1f), RoundedCornerShape(10.dp)).padding(8.dp))
+            Text(summary, style = MaterialTheme.typography.bodySmall, color = colors.muted, modifier = Modifier.weight(1f))
         }
-    }
-}
-
-@Composable
-private fun RhythmSeal(colors: WarmColors, todayCount: Int) {
-    val turn by animateFloatAsState(
-        targetValue = if (todayCount > 0) 18f else 0f,
-        animationSpec = TheLastMotion.gentleSpring(),
-        label = "rhythm-seal-turn",
-    )
-    Box(
-        modifier = Modifier
-            .size(78.dp)
-            .graphicsLayer { rotationZ = turn },
-        contentAlignment = Alignment.Center,
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            drawCircle(color = colors.panel)
-            drawCircle(color = colors.peach.copy(alpha = 0.52f), style = Stroke(width = 2.dp.toPx()))
-            drawArc(
-                color = colors.green,
-                startAngle = -90f,
-                sweepAngle = if (todayCount > 0) 250f else 92f,
-                useCenter = false,
-                style = Stroke(width = 5.dp.toPx(), cap = StrokeCap.Round),
-            )
-        }
-        Image(
-            painter = painterResource(R.drawable.nav_home),
-            contentDescription = null,
-            modifier = Modifier.size(48.dp),
-            contentScale = ContentScale.Fit,
-        )
     }
 }
 
@@ -581,7 +493,7 @@ private fun LifeDrawerCard(
 ) {
     val elapsed = elapsedLabel(event.lastOccurredAt)
     val cardColor by animateColorAsState(
-        targetValue = feedback?.let { Color(event.color).copy(alpha = 0.26f) } ?: eventSurface(colors, event.id),
+        targetValue = feedback?.let { Color(event.color).copy(alpha = 0.26f) } ?: colors.surface,
         animationSpec = TheLastMotion.reveal(),
         label = "event-card-color",
     )
@@ -590,7 +502,7 @@ private fun LifeDrawerCard(
         animationSpec = TheLastMotion.gentleSpring(),
         label = "drawer-card-scale",
     )
-    val shape = RoundedCornerShape(24.dp)
+    val shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomEnd = 24.dp, bottomStart = 10.dp)
     Card(
         colors = CardDefaults.cardColors(containerColor = cardColor),
         elevation = CardDefaults.cardElevation(defaultElevation = if (feedback != null) 3.dp else 0.dp),
@@ -599,7 +511,7 @@ private fun LifeDrawerCard(
             .then(if (wide) Modifier.defaultMinSize(minHeight = 190.dp) else Modifier.defaultMinSize(minHeight = 224.dp))
             .graphicsLayer { scaleX = cardScale; scaleY = cardScale }
             .animateContentSize(animationSpec = TheLastMotion.settle())
-            .border(1.dp, Color(event.color).copy(alpha = 0.18f), shape),
+            .border(1.dp, colors.line.copy(alpha = 0.7f), shape),
         shape = shape,
         onClick = onEventSelected,
     ) {
@@ -703,13 +615,13 @@ private fun LifeDrawerCard(
 private fun DrawerMonogram(colors: WarmColors, event: EventSummary, compact: Boolean) {
     Box(
         modifier = Modifier
-            .size(if (compact) 40.dp else 48.dp)
+            .size(if (compact) 52.dp else 62.dp)
             .background(Color(event.color).copy(alpha = 0.20f), RoundedCornerShape(if (compact) 14.dp else 17.dp))
             .border(1.dp, Color(event.color).copy(alpha = 0.30f), RoundedCornerShape(if (compact) 14.dp else 17.dp)),
         contentAlignment = Alignment.Center,
     ) {
         Image(painterResource(eventIllustrationForKey(event.icon)), null,
-            Modifier.size(if (compact) 36.dp else 44.dp), contentScale = ContentScale.Fit)
+            Modifier.size(if (compact) 44.dp else 54.dp), contentScale = ContentScale.Fit)
     }
 }
 
@@ -762,13 +674,6 @@ private fun DrawerRecordButton(
 
 private fun isWideDrawer(index: Int): Boolean = index == 0 || index % 5 == 4
 
-private fun eventMonogram(name: String): String {
-    val trimmed = name.trim()
-    if (trimmed.isEmpty()) return "·"
-    val endIndex = trimmed.offsetByCodePoints(0, 1)
-    return trimmed.substring(0, endIndex)
-}
-
 @Composable
 private fun EventIllustration(
     colors: WarmColors,
@@ -801,17 +706,6 @@ private fun EventIllustration(
     }
 }
 
-private fun eventSurface(colors: WarmColors, id: Long): Color {
-    val choices = listOf(
-        colors.peach.copy(alpha = 0.14f),
-        colors.yellow.copy(alpha = 0.16f),
-        colors.green.copy(alpha = 0.15f),
-        colors.blue.copy(alpha = 0.13f),
-        colors.lavender.copy(alpha = 0.14f),
-    )
-    return choices[(id % choices.size).toInt()]
-}
-
 @Composable
 private fun CalendarPage(
     colors: WarmColors,
@@ -833,10 +727,13 @@ private fun CalendarPage(
         contentPadding = PaddingValues(start = 20.dp, top = 22.dp, end = 20.dp, bottom = 96.dp),
     ) {
         item {
+            StoryBanner("日子慢慢，回忆满满", "日历小笺", "翻到那一天，\n看看留下的小事。", R.drawable.story_calendar)
+        }
+        item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
                     Text(
-                        text = currentMonth.month.getDisplayName(TextStyle.FULL, Locale.ENGLISH),
+                        text = "${currentMonth.monthValue}月",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = colors.ink,
@@ -888,7 +785,7 @@ private fun WarmCalendarGrid(
     ) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                listOf("M", "T", "W", "T", "F", "S", "S").forEach {
+                listOf("一", "二", "三", "四", "五", "六", "日").forEach {
                     Text(it, style = MaterialTheme.typography.labelMedium, color = colors.muted, modifier = Modifier.weight(1f))
                 }
             }
@@ -977,7 +874,7 @@ private fun SelectedDateRecords(
                     colors = colors,
                     title = "这一天很安静",
                     message = "还没有记录落在这一天，生活的小节奏会慢慢长出来。",
-                    imageRes = R.drawable.decor_calendar,
+                    imageRes = R.drawable.story_journal,
                 )
             } else {
                 records.forEach { record ->
@@ -1018,8 +915,7 @@ private fun StatsPage(
         contentPadding = PaddingValues(start = 20.dp, top = 22.dp, end = 20.dp, bottom = 96.dp),
     ) {
         item {
-            Text("节奏小结", style = MaterialTheme.typography.headlineMedium, color = colors.ink)
-            Text("不追求连续打卡，只看看生活留下了什么。", color = colors.muted)
+            StoryBanner("按自己的速度，慢慢生长", "节奏小花园", "不追求连续打卡，\n只看看生活留下了什么。", R.drawable.story_garden)
         }
         if (events.isEmpty()) {
             item {
@@ -1027,7 +923,7 @@ private fun StatsPage(
                     colors = colors,
                     title = "还没有统计",
                     message = "添加并记录几次后，这里会长出你的频率和节奏。",
-                    imageRes = R.drawable.decor_trophy,
+                    imageRes = R.drawable.story_journal,
                 )
             }
         }
@@ -1044,8 +940,7 @@ private fun StatsPage(
                     horizontalArrangement = Arrangement.spacedBy(14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    RhythmSeal(colors = colors, todayCount = recorded)
-                    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         Text(
                             text = if (recorded == 0) "节奏正在等待第一笔" else "$recorded 件小事已经有了时间轨迹",
                             style = MaterialTheme.typography.titleMedium,
@@ -1118,8 +1013,8 @@ private fun ProfilePage(
         contentPadding = PaddingValues(start = 20.dp, top = 22.dp, end = 20.dp, bottom = 96.dp),
     ) {
         item {
-            Text("我的", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold, color = colors.ink)
-            Text("云端同步、本地备份与偏好", color = colors.muted)
+            Text("我的小角落", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold, color = colors.ink)
+            Text("妥善收好回忆，也照顾自己的偏好。", color = colors.muted)
         }
         item { UpdateCard() }
         item { CloudSyncCard() }
@@ -1195,12 +1090,12 @@ private fun EmptyHomeState(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Image(
-                painter = painterResource(R.drawable.illus_record),
+                painter = painterResource(R.drawable.story_journal),
                 contentDescription = null,
-                modifier = Modifier.size(120.dp),
+                modifier = Modifier.size(148.dp),
                 contentScale = ContentScale.Fit,
             )
-            Text("还没有小事件", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, color = colors.ink)
+            Text("第一件小事，从这里开始", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, color = colors.ink)
             Text("先从一个模板开始，也可以创建自己的小节奏。", color = colors.muted)
             templates.chunked(2).forEach { rowItems ->
                 Row(

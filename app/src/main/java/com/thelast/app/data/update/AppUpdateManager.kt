@@ -16,6 +16,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+const val DEFAULT_UPDATE_REPOSITORY = "9OwO6/The-Last"
+
 data class UpdateState(
     val repository: String = "", val automatic: Boolean = true,
     val busy: Boolean = false, val message: String = "连接发布仓库，及时收到新版本",
@@ -28,7 +30,11 @@ class AppUpdateManager(
 ) {
     private val prefs = context.getSharedPreferences("app_updates", Context.MODE_PRIVATE)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private val mutable = MutableStateFlow(UpdateState(prefs.getString("repository", "") ?: "", prefs.getBoolean("automatic", true)))
+    private val mutable = MutableStateFlow(UpdateState(
+        repository = prefs.getString("repository", DEFAULT_UPDATE_REPOSITORY).orEmpty().ifBlank { DEFAULT_UPDATE_REPOSITORY },
+        automatic = prefs.getBoolean("automatic", true),
+        message = "打开软件时自动检查，也可以立即手动检查",
+    ))
     val state = mutable.asStateFlow()
     private var lastAttempt = 0L
     private val apk get() = File(context.cacheDir, "updates/thelast.apk")

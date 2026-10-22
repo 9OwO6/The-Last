@@ -82,7 +82,7 @@ class AppUpdateManagerTest {
         prepare()
         val manager = AppUpdateManager(context) { response(it, 403, "") }
         assertNotNull(manager.configure("https://evil.example/repo"))
-        assertEquals("", manager.state.value.repository)
+        assertEquals("9OwO6/The-Last", manager.state.value.repository)
         manager.configure("owner/repo")
         await(manager)
         assertTrue(manager.state.value.message.contains("过于频繁"))

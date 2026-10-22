@@ -1,5 +1,7 @@
 # The Last · 随处记录
 
+[下载最新版](https://github.com/9OwO6/The-Last/releases/latest) · [更新与发布说明](docs/updates.md)
+
 本地优先的 Android 事件记录器。可以一键记录、补记、编辑历史、查看频率、导出 JSON/CSV，并支持 MyJournal 私人云同步和网页记录入口。
 
 0.11.0 优化暖纸色界面、首页生活插画与事项图标，新增「我的 → 软件更新」：启动/返回前台自动检查正式 GitHub Release，发现新版在首页提醒；支持更新说明、下载进度、SHA-256 与签名校验，以及系统确认安装。完整发布与验收约定见 [更新说明](docs/updates.md)。

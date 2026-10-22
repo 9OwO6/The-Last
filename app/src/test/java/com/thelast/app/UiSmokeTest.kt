@@ -28,7 +28,7 @@ class UiSmokeTest {
         compose.onNodeWithText("让小日常，常用常新").assertIsDisplayed()
         capture("profile")
         compose.onNodeWithText("设置来源").performClick()
-        compose.onNodeWithText("owner/repository").performTextInput("invalid")
+        compose.onNodeWithText("owner/repository").performTextReplacement("invalid")
         compose.onNodeWithText("保存并检查").performScrollTo().performClick()
         compose.onNodeWithText("请输入 GitHub 仓库地址或 owner/repository").assertExists()
         compose.onNodeWithText("取消").performScrollTo().performClick()
